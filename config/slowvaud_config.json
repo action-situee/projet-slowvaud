@@ -1,0 +1,166 @@
+{
+  "project": {
+    "name": "SlowVaud - orthophotos et infrastructures cyclables",
+    "objective": "Constituer un environnement reproductible pour preparer des jeux d'apprentissage de reconnaissance d'infrastructures cyclables a partir d'orthophotos.",
+    "default_crs": "EPSG:2056",
+    "web_crs": "EPSG:4326",
+    "wmts_crs": "EPSG:3857"
+  },
+  "agglomerations": {
+    "lausanne": {
+      "label": "Lausanne",
+      "country_filter": ["CH"],
+      "center_wgs84": {"lon": 6.6323, "lat": 46.5197},
+      "ortho_buffer_m": 2500,
+      "geoadmin": {
+        "vaco_name": "Lausanne",
+        "g1_name": "Lausanne"
+      }
+    },
+    "berne": {
+      "label": "Berne",
+      "country_filter": ["CH"],
+      "center_wgs84": {"lon": 7.4474, "lat": 46.9479},
+      "ortho_buffer_m": 2500,
+      "geoadmin": {
+        "vaco_name": "Bern",
+        "g1_name": "Bern"
+      }
+    },
+    "geneve": {
+      "label": "Genève",
+      "country_filter": ["CH"],
+      "center_wgs84": {"lon": 6.1432, "lat": 46.2044},
+      "ortho_buffer_m": 2500,
+      "geoadmin": {
+        "vaco_name": "Genève",
+        "g1_name": "Genève (CH)"
+      }
+    },
+    "bale": {
+      "label": "Bâle",
+      "country_filter": ["CH"],
+      "center_wgs84": {"lon": 7.5886, "lat": 47.5596},
+      "ortho_buffer_m": 2500,
+      "geoadmin": {
+        "vaco_name": "Basel",
+        "g1_name": "Basel"
+      }
+    },
+    "zurich": {
+      "label": "Zurich",
+      "country_filter": ["CH"],
+      "center_wgs84": {"lon": 8.5472, "lat": 47.3769},
+      "ortho_buffer_m": 2500,
+      "geoadmin": {
+        "vaco_name": "Zürich",
+        "g1_name": "Zürich"
+      }
+    }
+  },
+  "geoadmin_layers": {
+    "vaco": {
+      "layer": "ch.are.agglomerationsverkehr",
+      "name_field": "agglo_name",
+      "source_label": "ARE - villes et agglomerations ayant droit aux contributions VaCO",
+      "download_url": "https://data.geo.admin.ch/browser/index.html#/collections/ch.are.agglomerationsverkehr",
+      "notes": "Basee sur la definition OFS de l'espace a caractere urbain, actualisee au 01.08.2025 pour les projets d'agglomeration. Utile pour les perimetres operationnels."
+    },
+    "g1": {
+      "layer": "ch.bfs.generalisierte-grenzen_agglomerationen_g1",
+      "name_field": "aname",
+      "source_label": "OFS/swisstopo - limites generalisees des agglomerations G1",
+      "download_url": "https://data.geo.admin.ch/browser/index.html#/collections/ch.bfs.generalisierte-grenzen_agglomerationen_g1",
+      "notes": "Limites generalisees adaptees aux cartes a petite echelle. A ne pas utiliser seules pour une decoupe fine d'orthophotos."
+    }
+  },
+  "orthophoto_profiles": {
+    "preview": {
+      "label": "Apercu WMTS",
+      "layer": "ch.swisstopo.swissimage",
+      "zoom": 16,
+      "extension": "jpeg",
+      "purpose": "controle rapide des emprises et des URL"
+    },
+    "swissimage_25cm_like": {
+      "label": "Echantillonnage WMTS proche 20-25 cm",
+      "layer": "ch.swisstopo.swissimage",
+      "zoom": 19,
+      "extension": "jpeg",
+      "purpose": "prototype d'apprentissage moins volumineux"
+    },
+    "swissimage_10cm_like": {
+      "label": "Echantillonnage WMTS proche 10 cm",
+      "layer": "ch.swisstopo.swissimage",
+      "zoom": 20,
+      "extension": "jpeg",
+      "purpose": "entrainement haute resolution sur petites zones controlees"
+    }
+  },
+  "osm": {
+    "network_type": "all",
+    "tags": {
+      "dedicated_cycleway": {"highway": "cycleway"},
+      "cycleway_lane_or_track": {
+        "cycleway": true,
+        "cycleway:left": true,
+        "cycleway:right": true,
+        "cycleway:both": true
+      },
+      "bicycle_designated": {"bicycle": "designated"}
+    },
+    "notes": "OSM sert de contexte et de labels faibles. Les attributs doivent etre controles localement avant apprentissage supervise."
+  },
+  "context_sources": {
+    "geneve_sitg_amenagements_2roues": {
+      "agglomeration": "geneve",
+      "title": "Amenagements cyclables - Canton de Geneve",
+      "type": "arcgis_feature_server",
+      "metadata_url": "https://sitg.ge.ch/donnees/otc-amenag-2roues",
+      "service_url": "https://vector.sitg.ge.ch/arcgis/rest/services/OTC_AMENAG_2ROUES/FeatureServer",
+      "layer_id": 0,
+      "source_crs": "EPSG:2056",
+      "output_crs": "EPSG:4326",
+      "status": "direct_download",
+      "license_note": "Acces libre SITG. Verifier les conditions de reutilisation dans la fiche source.",
+      "use_for_training": true
+    },
+    "lausanne_viageo_amenagement_cyclable": {
+      "agglomeration": "lausanne",
+      "title": "Amenagement cyclable - Ville de Lausanne",
+      "type": "manual_download",
+      "metadata_url": "https://viageo.ch/md/eb867568-c511-4304-b902-1bbfbd0d8806",
+      "download_page": "https://viageo.ch/catalogue/donnee/200837#downloadAction",
+      "formats": ["CSV", "Shapefile"],
+      "source_crs": "EPSG:2056",
+      "output_crs": "[A COMPLETER]",
+      "status": "manual_or_authenticated_download",
+      "license_note": "Utilisation libre avec obligation d'indiquer la source selon la fiche viageo.",
+      "use_for_training": true
+    },
+    "berne_local_cycle_infrastructure": {
+      "agglomeration": "berne",
+      "title": "[A COMPLETER] Donnees locales d'amenagements cyclables - Berne",
+      "type": "todo",
+      "metadata_url": null,
+      "status": "a_rechercher",
+      "use_for_training": true
+    },
+    "bale_local_cycle_infrastructure": {
+      "agglomeration": "bale",
+      "title": "[A COMPLETER] Donnees locales d'amenagements cyclables - Bale",
+      "type": "todo",
+      "metadata_url": null,
+      "status": "a_rechercher",
+      "use_for_training": true
+    },
+    "zurich_local_cycle_infrastructure": {
+      "agglomeration": "zurich",
+      "title": "[A COMPLETER] Donnees locales d'amenagements cyclables - Zurich",
+      "type": "todo",
+      "metadata_url": null,
+      "status": "a_rechercher",
+      "use_for_training": true
+    }
+  }
+}

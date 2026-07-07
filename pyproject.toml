@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slowvaud"
+version = "0.1.0"
+description = "Preparation de donnees orthophotos et contexte cyclable pour SlowVaud"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "requests>=2.31",
+  "pandas>=2.0",
+  "geopandas>=0.14",
+  "shapely>=2.0",
+  "pyproj>=3.6",
+  "rasterio>=1.3",
+  "osmnx>=1.9",
+  "jupyter>=1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5",
+  "nbformat>=5.10"
+]
+
+[project.scripts]
+slowvaud-data = "slowvaud.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
