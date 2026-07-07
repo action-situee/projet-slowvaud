@@ -10,7 +10,8 @@ Objectif immédiat :
 
 1. obtenir des périmètres d'agglomération suisses exploitables ;
 2. extraire les objets OSM liés aux pistes, bandes et aménagements cyclables ;
-3. préparer des échantillons d'orthophotos à deux niveaux de résolution WMTS ;
+3. préparer les orthophotos SWISSIMAGE couvrant les agglomérations à deux
+   niveaux de résolution ;
 4. documenter et télécharger, quand c'est direct, les sources locales de contexte ;
 5. garder un environnement indépendant, propre et réutilisable.
 
@@ -54,6 +55,11 @@ data/manifests/
 data/processed/
 ```
 
+Les orthophotos 10 cm complètes sont très volumineuses. Sur le manifeste actuel
+des cinq agglomérations, l'ordre de grandeur estimé est d'environ 744 GiB pour
+le `0.1 m` et 1.9 GiB pour le `2.0 m`. Le téléchargement 10 cm doit donc être
+lancé sur un volume adapté.
+
 ## Installation
 
 ```bash
@@ -82,11 +88,11 @@ Le projet explicite les CRS à chaque étape pour éviter les inférences implic
 | Centres d'agglomération dans la configuration | `EPSG:4326` WGS84 |
 | OSM extrait via Overpass/OSMnx | `EPSG:4326` WGS84 |
 | SITG Genève téléchargé en GeoJSON | sortie `EPSG:4326`, source métier `EPSG:2056` |
-| Manifestes orthophotos | emprise `EPSG:4326`, tuiles WMTS `EPSG:3857` |
+| Orthophotos SWISSIMAGE STAC | `EPSG:2056` LV95, GeoTIFF/COG |
 
-Les conversions WGS84/LV95 sont faites avec `pyproj`. Les emprises WMTS sont
-construites à partir d'un buffer métrique en LV95, puis converties vers WGS84
-pour les indices de tuiles web.
+Les conversions WGS84/LV95 sont faites avec `pyproj`. Les requêtes STAC utilisent
+une emprise WGS84 pour interroger l'API, puis les items sont filtrés par
+intersection avec les périmètres VaCO dissous en LV95.
 
 ## Notebooks
 
@@ -97,7 +103,7 @@ manque.
 Ordre recommandé :
 
 1. `00_donnees_geodesie_slowvaud.ipynb` : contrôle de la configuration,
-   manifeste orthophoto et téléchargement des échantillons WMTS.
+   manifeste orthophoto STAC et estimation des volumes.
 2. `02_agglomerations_shapes.ipynb` : téléchargement GeoAdmin VaCO et dissolution
    des périmètres d'agglomération en LV95.
 3. `01_orthophotos_osm_network.ipynb` : extraction OSM dans les périmètres
@@ -116,12 +122,12 @@ Agglomérations :
 
 Orthophotos :
 
-- source de prototypage : WMTS GeoAdmin `ch.swisstopo.swissimage` ;
-- profils configurés : `swissimage_25cm_like` à zoom 19 et
-  `swissimage_10cm_like` à zoom 20 ;
-- limite : les tuiles WMTS sont des JPEG web. Pour l'entraînement final, il
-  faudra privilégier des GeoTIFF/COG SWISSIMAGE, conserver le géoréférencement et
-  découper les tuiles d'apprentissage avec transform affine et CRS explicites.
+- source de travail : STAC GeoAdmin `ch.swisstopo.swissimage-dop10` ;
+- format : GeoTIFF/COG en `EPSG:2056` ;
+- niveaux disponibles dans la collection : `0.1 m` et `2.0 m` ;
+- méthode : intersection des items STAC avec les périmètres VaCO dissous ;
+- prudence : la couverture complète à 10 cm est volumineuse. Générer et
+  contrôler le manifeste avant de lancer le téléchargement.
 
 OSM :
 
@@ -144,16 +150,23 @@ Télécharger les agglomérations :
 python3 scripts/fetch_agglomerations.py --source vaco
 ```
 
-Créer un manifeste orthophoto sans téléchargement :
+Créer un manifeste orthophoto STAC complet, avec estimation des tailles :
 
 ```bash
-python3 fetch_orthophotos_wmts.py --profiles swissimage_25cm_like swissimage_10cm_like --max-tiles 10 --dry-run
+python3 fetch_orthophotos_stac.py --gsds 2.0 0.1 --estimate-sizes
 ```
 
-Télécharger les échantillons WMTS listés :
+Télécharger la couverture complète en 2 m :
 
 ```bash
-python3 fetch_orthophotos_wmts.py --profiles swissimage_25cm_like swissimage_10cm_like --max-tiles 10 --download
+python3 fetch_orthophotos_stac.py --gsds 2.0 --download --estimate-sizes
+```
+
+Télécharger la couverture complète en 10 cm, uniquement sur un volume disposant
+de suffisamment d'espace :
+
+```bash
+python3 fetch_orthophotos_stac.py --gsds 0.1 --download --estimate-sizes
 ```
 
 Télécharger les sources de contexte directes :

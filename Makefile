@@ -13,13 +13,13 @@ install: venv
 	$(PIP) install -e ".[dev]"
 
 check:
-	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m compileall -q src scripts fetch_orthophotos_wmts.py
+	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m compileall -q src scripts fetch_orthophotos_stac.py
 
 init-data:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m slowvaud.cli init
 
 manifest:
-	PYTHONDONTWRITEBYTECODE=1 $(PY) fetch_orthophotos_wmts.py --profiles preview --max-tiles 5 --dry-run
+	PYTHONDONTWRITEBYTECODE=1 $(PY) fetch_orthophotos_stac.py --gsds 2.0 --agglomerations lausanne
 
 context-registry:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m slowvaud.cli context-registry

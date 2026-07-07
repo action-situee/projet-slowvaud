@@ -8,7 +8,14 @@ from pathlib import Path
 
 from .context import fetch_context_source, write_context_registry
 from .geoadmin import download_all_agglomerations
-from .orthophotos import download_records, iter_tile_records, write_manifest
+from .orthophotos import (
+    add_content_lengths,
+    build_stac_manifest_records,
+    download_stac_records,
+    estimate_content_lengths,
+    read_manifest,
+    write_manifest,
+)
 from .paths import data_paths, ensure_data_tree, load_config
 
 
@@ -27,29 +34,41 @@ def cmd_agglomerations(args: argparse.Namespace) -> None:
     print(json.dumps(summaries, indent=2, ensure_ascii=False))
 
 
+def _float_values(values: list[str] | None) -> list[float] | None:
+    return [float(value) for value in values] if values else None
+
+
 def cmd_orthophoto_manifest(args: argparse.Namespace) -> None:
     ensure_data_tree()
-    records = iter_tile_records(
+    records = build_stac_manifest_records(
         agglomerations=_split_values(args.agglomerations),
-        profiles=_split_values(args.profiles),
-        max_tiles_per_profile=args.max_tiles,
+        boundary_source=args.boundary_source,
+        gsds=_float_values(args.gsds) or [2.0, 0.1],
     )
-    output = Path(args.output) if args.output else data_paths()["manifests"] / "orthophoto_wmts_manifest.csv"
+    if args.exact_sizes:
+        records = add_content_lengths(records)
+    output = Path(args.output) if args.output else data_paths()["manifests"] / "orthophoto_stac_manifest.csv"
     write_manifest(records, output)
-    print(f"{len(records)} tuiles listees: {output}")
+    print(f"{len(records)} assets listes: {output}")
+    if args.estimate_sizes:
+        estimate = estimate_content_lengths(records, sample_per_gsd=args.sample_per_gsd)
+        estimate_output = data_paths()["manifests"] / "orthophoto_stac_size_estimate.json"
+        estimate_output.write_text(json.dumps(estimate, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"Estimation tailles: {estimate_output}")
 
 
 def cmd_orthophoto_download(args: argparse.Namespace) -> None:
-    records = iter_tile_records(
-        agglomerations=_split_values(args.agglomerations),
-        profiles=_split_values(args.profiles),
-        max_tiles_per_profile=args.max_tiles,
+    manifest = Path(args.manifest) if args.manifest else data_paths()["manifests"] / "orthophoto_stac_manifest.csv"
+    records = read_manifest(manifest)
+    stats = download_stac_records(
+        records,
+        gsds=_float_values(args.gsds),
+        overwrite=args.overwrite,
     )
-    stats = download_records(records, dry_run=args.dry_run)
-    output = data_paths()["manifests"] / "orthophoto_download_stats.json"
+    output = data_paths()["manifests"] / "orthophoto_stac_download_stats.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(stats, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"{len(stats)} tuiles traitees. Statistiques: {output}")
+    print(f"{len(stats)} assets traites. Statistiques: {output}")
 
 
 def cmd_context_registry(_: argparse.Namespace) -> None:
@@ -77,18 +96,20 @@ def build_parser() -> argparse.ArgumentParser:
     aggs.add_argument("--include-foreign", action="store_true")
     aggs.set_defaults(func=cmd_agglomerations)
 
-    manifest = subparsers.add_parser("orthophoto-manifest", help="Creer un manifeste WMTS")
-    manifest.add_argument("--profiles", nargs="+")
+    manifest = subparsers.add_parser("orthophoto-manifest", help="Creer un manifeste STAC SWISSIMAGE")
+    manifest.add_argument("--gsds", nargs="+", default=["2.0", "0.1"])
     manifest.add_argument("--agglomerations", nargs="+")
-    manifest.add_argument("--max-tiles", type=int, default=20)
+    manifest.add_argument("--boundary-source", default="vaco")
+    manifest.add_argument("--estimate-sizes", action="store_true")
+    manifest.add_argument("--exact-sizes", action="store_true")
+    manifest.add_argument("--sample-per-gsd", type=int, default=30)
     manifest.add_argument("--output")
     manifest.set_defaults(func=cmd_orthophoto_manifest)
 
-    download = subparsers.add_parser("orthophoto-download", help="Telecharger des tuiles WMTS")
-    download.add_argument("--profiles", nargs="+")
-    download.add_argument("--agglomerations", nargs="+")
-    download.add_argument("--max-tiles", type=int, default=20)
-    download.add_argument("--dry-run", action="store_true")
+    download = subparsers.add_parser("orthophoto-download", help="Telecharger des assets STAC SWISSIMAGE")
+    download.add_argument("--manifest")
+    download.add_argument("--gsds", nargs="+")
+    download.add_argument("--overwrite", action="store_true")
     download.set_defaults(func=cmd_orthophoto_download)
 
     registry = subparsers.add_parser("context-registry", help="Exporter le registre de contexte")
@@ -109,4 +130,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

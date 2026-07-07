@@ -3,8 +3,7 @@
     "name": "SlowVaud - orthophotos et infrastructures cyclables",
     "objective": "Constituer un environnement reproductible pour preparer des jeux d'apprentissage de reconnaissance d'infrastructures cyclables a partir d'orthophotos.",
     "default_crs": "EPSG:2056",
-    "web_crs": "EPSG:4326",
-    "wmts_crs": "EPSG:3857"
+    "web_crs": "EPSG:4326"
   },
   "agglomerations": {
     "lausanne": {
@@ -74,28 +73,14 @@
       "notes": "Limites generalisees adaptees aux cartes a petite echelle. A ne pas utiliser seules pour une decoupe fine d'orthophotos."
     }
   },
-  "orthophoto_profiles": {
-    "preview": {
-      "label": "Apercu WMTS",
-      "layer": "ch.swisstopo.swissimage",
-      "zoom": 16,
-      "extension": "jpeg",
-      "purpose": "controle rapide des emprises et des URL"
-    },
-    "swissimage_25cm_like": {
-      "label": "Echantillonnage WMTS proche 20-25 cm",
-      "layer": "ch.swisstopo.swissimage",
-      "zoom": 19,
-      "extension": "jpeg",
-      "purpose": "prototype d'apprentissage moins volumineux"
-    },
-    "swissimage_10cm_like": {
-      "label": "Echantillonnage WMTS proche 10 cm",
-      "layer": "ch.swisstopo.swissimage",
-      "zoom": 20,
-      "extension": "jpeg",
-      "purpose": "entrainement haute resolution sur petites zones controlees"
-    }
+  "orthophoto_source": {
+    "collection": "ch.swisstopo.swissimage-dop10",
+    "title": "SWISSIMAGE 10 cm, digital orthophotomosaic of Switzerland",
+    "stac_collection_url": "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissimage-dop10",
+    "asset_crs": "EPSG:2056",
+    "asset_format": "GeoTIFF/COG",
+    "asset_gsds": [2.0, 0.1],
+    "notes": "Source raster de travail. Les tuiles 1 km sont telechargees par intersection avec les perimetres VaCO dissous."
   },
   "osm": {
     "network_type": "all",
