@@ -3,7 +3,7 @@ VENV ?= .venv
 PIP := $(VENV)/bin/pip
 PY := $(VENV)/bin/python
 
-.PHONY: venv install check init-data manifest context-registry clean-cache
+.PHONY: venv install check check-data init-data manifest context-registry clean-cache
 
 venv:
 	$(PYTHON) -m venv $(VENV)
@@ -14,6 +14,9 @@ install: venv
 
 check:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m compileall -q src scripts fetch_orthophotos_stac.py
+
+check-data:
+	PYTHONDONTWRITEBYTECODE=1 $(PY) scripts/check_data_inventory.py --strict
 
 init-data:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m slowvaud.cli init

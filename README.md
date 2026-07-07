@@ -45,8 +45,10 @@ Les données générées par les notebooks ne sont pas versionnées dans Git.
 Une copie des données préparées peut être téléchargée depuis kDrive :
 https://kdrive.situee.ch/app/share/1187668/43676546-af8a-49ba-869b-5709c4afc2a6
 
-Après téléchargement, placer le contenu à la racine du dossier `data/` du dépôt,
-en conservant l'arborescence attendue :
+Après téléchargement, placer le contenu à la racine du dossier `data/` du dépôt.
+La procédure détaillée est dans `docs/DATA_LOADING.md`.
+
+Arborescence attendue :
 
 ```text
 data/raw/
@@ -55,10 +57,22 @@ data/manifests/
 data/processed/
 ```
 
-Les orthophotos 10 cm complètes sont très volumineuses. Sur le manifeste actuel
-des cinq agglomérations, l'ordre de grandeur estimé est d'environ 744 GiB pour
-le `0.1 m` et 1.9 GiB pour le `2.0 m`. Le téléchargement 10 cm doit donc être
-lancé sur un volume adapté.
+Contrôle après chargement :
+
+```bash
+python3 scripts/check_data_inventory.py --strict
+```
+
+ou :
+
+```bash
+make check-data
+```
+
+Les orthophotos 10 cm complètes sont très volumineuses. Le test réel de 100
+tuiles Lausanne donne une moyenne de 65.3 MiB par tuile, soit environ 83 GiB
+pour Lausanne et environ 750 GiB pour les cinq agglomérations. Le téléchargement
+10 cm complet doit donc être lancé sur un volume adapté.
 
 ## Installation
 
@@ -77,6 +91,27 @@ make manifest
 ```
 
 Voir aussi `docs/SETUP.md` pour les variantes d'installation et le remote Git.
+
+## Démarrage rapide
+
+Pour reprendre le projet avec les données préparées :
+
+```bash
+git clone git@github.com:action-situee/projet-slowvaud.git
+cd projet-slowvaud
+python3.12 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+Télécharger ensuite les données depuis kDrive, les placer dans `data/`, puis
+contrôler l'inventaire :
+
+```bash
+python3 scripts/check_data_inventory.py --strict
+```
+
+Les notebooks peuvent ensuite être ouverts dans l'ordre indiqué plus bas.
 
 ## Contrat CRS
 
@@ -183,6 +218,13 @@ faut contrôler les catégories, les dates, les décalages géométriques, les e
 de latéralisation et la visibilité réelle dans les orthophotos.
 
 Un schéma de labels initial est disponible dans `docs/LABEL_SCHEMA.md`.
+
+## Documentation utile
+
+- `docs/DATA_LOADING.md` : chargement, contrôle et régénération des données.
+- `docs/SETUP.md` : installation locale.
+- `docs/LABEL_SCHEMA.md` : classes de labels faibles pour les infrastructures
+  cyclables.
 
 ## Git
 
