@@ -25,7 +25,17 @@ def _split_values(values: list[str] | None) -> list[str] | None:
 
 def cmd_init(_: argparse.Namespace) -> None:
     paths = ensure_data_tree()
-    for name, path in paths.items():
+    for name in [
+        "data",
+        "raw",
+        "raw_agglomerations",
+        "raw_osm",
+        "raw_orthophotos",
+        "raw_swisstlm3d",
+        "context",
+        "processed",
+    ]:
+        path = paths[name]
         print(f"{name}: {path}")
 
 

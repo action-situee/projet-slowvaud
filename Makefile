@@ -3,7 +3,7 @@ VENV ?= .venv
 PIP := $(VENV)/bin/pip
 PY := $(VENV)/bin/python
 
-.PHONY: venv install check check-data init-data manifest context-registry clean-cache
+.PHONY: venv install check check-data init-data context-registry clean-cache
 
 venv:
 	$(PYTHON) -m venv $(VENV)
@@ -20,9 +20,6 @@ check-data:
 
 init-data:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m slowvaud.cli init
-
-manifest:
-	PYTHONDONTWRITEBYTECODE=1 $(PY) fetch_orthophotos_stac.py --gsds 2.0 --agglomerations lausanne
 
 context-registry:
 	PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src $(PY) -m slowvaud.cli context-registry

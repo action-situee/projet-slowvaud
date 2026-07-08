@@ -1,235 +1,146 @@
-# SlowVaud - orthophotos et infrastructures cyclables
+# SlowVaud - première brique orthophotos et labels cyclables
 
-Ce dépôt prépare un environnement de travail reproductible pour constituer des
-données d'apprentissage autour des infrastructures cyclables, à partir
-d'orthophotos SWISSIMAGE et de données de contexte vectorielles.
+Ce dépôt prépare les premières pistes techniques pour lancer SlowVaud. Il ne
+couvre pas encore l'ensemble du projet décrit dans la note SDSC : portails web,
+flux de mobilité, données perçues, simulations et indicateurs complets ne sont
+pas traités ici.
 
-Périmètre initial : Lausanne, Berne, Genève, Bâle, Zurich.
+Le périmètre de ce dépôt est plus limité :
 
-Objectif immédiat :
+- récupérer des périmètres d'agglomération ;
+- mobiliser un réseau routier de référence ;
+- préparer des orthophotos SWISSIMAGE ;
+- extraire un contexte cyclable OSM ;
+- identifier des sources locales de comparaison ;
+- poser un premier schéma de labels faibles pour les infrastructures cyclables.
 
-1. obtenir des périmètres d'agglomération suisses exploitables ;
-2. extraire les objets OSM liés aux pistes, bandes et aménagements cyclables ;
-3. préparer les orthophotos SWISSIMAGE couvrant les agglomérations à deux
-   niveaux de résolution ;
-4. documenter et télécharger, quand c'est direct, les sources locales de contexte ;
-5. garder un environnement indépendant, propre et réutilisable.
+Périmètre exploratoire : Lausanne, Berne, Genève, Bâle, Zurich.
 
-## Structure
-
-```text
-config/slowvaud_config.json       Configuration centrale
-src/slowvaud/                     Fonctions réutilisables
-scripts/                          Wrappers CLI
-00_donnees_geodesie_slowvaud.ipynb
-02_agglomerations_shapes.ipynb
-01_orthophotos_osm_network.ipynb
-03_context_sources.ipynb
-data/
-  raw/                            Données brutes téléchargées
-  context/                        Données cantonales/communales de contexte
-  manifests/                      Manifestes et registres
-  processed/                      Données préparées
-exports/                          Exports finaux
-docs/                             Notes complémentaires
-```
-
-Les dossiers `data/` et `exports/` sont ignorés par Git, sauf leurs `.gitkeep`.
-Le dépôt versionne le code, les notebooks, la configuration et la documentation,
-pas les orthophotos ni les exports volumineux.
-
-## Données téléchargées
-
-Les données générées par les notebooks ne sont pas versionnées dans Git.
-
-Une copie des données préparées peut être téléchargée depuis kDrive :
-https://kdrive.situee.ch/app/share/1187668/43676546-af8a-49ba-869b-5709c4afc2a6
-
-Après téléchargement, placer le contenu à la racine du dossier `data/` du dépôt.
-La procédure détaillée est dans `docs/DATA_LOADING.md`.
-
-Arborescence attendue :
-
-```text
-data/raw/
-data/context/
-data/manifests/
-data/processed/
-```
-
-Contrôle après chargement :
+## Démarrage rapide
 
 ```bash
-python3 scripts/check_data_inventory.py --strict
+git clone git@github.com:action-situee/projet-slowvaud.git
+cd projet-slowvaud
+make install
+make check
 ```
 
-ou :
+Copier ensuite le paquet kDrive dans `data/`, puis vérifier :
 
 ```bash
 make check-data
 ```
 
-Les orthophotos 10 cm complètes sont très volumineuses. Le test réel de 100
-tuiles Lausanne donne une moyenne de 65.3 MiB par tuile, soit environ 83 GiB
-pour Lausanne et environ 750 GiB pour les cinq agglomérations. Le téléchargement
-10 cm complet doit donc être lancé sur un volume adapté.
+Le paquet kDrive est ici :
 
-## Installation
+https://kdrive.situee.ch/app/share/1187668/43676546-af8a-49ba-869b-5709c4afc2a6
 
-```bash
-python3.12 -m venv .venv
-. .venv/bin/activate
-pip install -e ".[dev]"
+## Contenu utile
+
+```text
+config/slowvaud_config.json       Villes, sources, CRS, paramètres
+src/slowvaud/                     Fonctions Python réutilisables
+scripts/check_data_inventory.py   Vérification courte des données locales
+fetch_orthophotos_stac.py         Préparation/téléchargement SWISSIMAGE
+00_donnees_geodesie_slowvaud.ipynb
+02_agglomerations_shapes.ipynb
+01_orthophotos_osm_network.ipynb
+03_context_sources.ipynb
+docs/DATA_SOURCES.md              Sources de données et pointeurs géoportail
+docs/METHOD_NOTES.md              Classes provisoires et prochaines étapes
 ```
 
-Commandes utiles :
+Le dépôt Git ne contient pas les orthophotos ni les données lourdes. Les données
+locales doivent être placées sous `data/`.
 
-```bash
-make check
-make init-data
-make manifest
+Arborescence minimale attendue :
+
+```text
+data/
+  raw/          périmètres, OSM, orthophotos, swissTLM3D
+  context/      sources locales, par exemple SITG Genève
+  processed/    périmètres préparés
 ```
 
-Voir aussi `docs/SETUP.md` pour les variantes d'installation et le remote Git.
+Le dossier `data/` doit rester simple au démarrage : données brutes, sources de
+contexte, données préparées. Les fichiers techniques générés par certains
+scripts ne sont pas nécessaires pour une première prise en main.
 
-## Démarrage rapide
+## Données transmises
 
-Pour reprendre le projet avec les données préparées :
+Le paquet kDrive contient de quoi démarrer :
 
-```bash
-git clone git@github.com:action-situee/projet-slowvaud.git
-cd projet-slowvaud
-python3.12 -m venv .venv
-. .venv/bin/activate
-pip install -e ".[dev]"
-```
+- périmètres VaCO pour Lausanne, Berne, Genève, Bâle, Zurich ;
+- swissTLM3D comme réseau routier de base, avec une extraction par ville ;
+- extractions OSM cyclables ;
+- sources locales Genève/SITG et Lausanne/Viageo ;
+- sample SWISSIMAGE `2.0 m` sur Lausanne ;
+- sample SWISSIMAGE `0.1 m` sur Lausanne.
 
-Télécharger ensuite les données depuis kDrive, les placer dans `data/`, puis
-contrôler l'inventaire :
-
-```bash
-python3 scripts/check_data_inventory.py --strict
-```
-
-Les notebooks peuvent ensuite être ouverts dans l'ordre indiqué plus bas.
-
-## Contrat CRS
-
-Le projet explicite les CRS à chaque étape pour éviter les inférences implicites.
-
-| Donnée | CRS |
-|---|---|
-| Agglomérations GeoAdmin brutes et dissoutes | `EPSG:2056` LV95 |
-| Centres d'agglomération dans la configuration | `EPSG:4326` WGS84 |
-| OSM extrait via Overpass/OSMnx | `EPSG:4326` WGS84 |
-| SITG Genève téléchargé en GeoJSON | sortie `EPSG:4326`, source métier `EPSG:2056` |
-| Orthophotos SWISSIMAGE STAC | `EPSG:2056` LV95, GeoTIFF/COG |
-
-Les conversions WGS84/LV95 sont faites avec `pyproj`. Les requêtes STAC utilisent
-une emprise WGS84 pour interroger l'API, puis les items sont filtrés par
-intersection avec les périmètres VaCO dissous en LV95.
-
-## Notebooks
-
-Les notebooks sont volontairement simples. Chaque notebook a une cellule de
-paramètres en haut. Les téléchargements échouent explicitement si un prérequis
-manque.
-
-Ordre recommandé :
-
-1. `00_donnees_geodesie_slowvaud.ipynb` : contrôle de la configuration,
-   manifeste orthophoto STAC et estimation des volumes.
-2. `02_agglomerations_shapes.ipynb` : téléchargement GeoAdmin VaCO et dissolution
-   des périmètres d'agglomération en LV95.
-3. `01_orthophotos_osm_network.ipynb` : extraction OSM dans les périmètres
-   dissous.
-4. `03_context_sources.ipynb` : registre des sources locales et téléchargement
-   des sources directes, actuellement SITG Genève.
-
-## Sources
-
-Agglomérations :
-
-- source par défaut : GeoAdmin `ch.are.agglomerationsverkehr`, champ
-  `agglo_name`, périmètres VaCO ;
-- source alternative configurée : `ch.bfs.generalisierte-grenzen_agglomerationen_g1`
-  pour des limites généralisées, moins adaptées à la découpe fine d'orthophotos.
-
-Orthophotos :
-
-- source de travail : STAC GeoAdmin `ch.swisstopo.swissimage-dop10` ;
-- format : GeoTIFF/COG en `EPSG:2056` ;
-- niveaux disponibles dans la collection : `0.1 m` et `2.0 m` ;
-- méthode : intersection des items STAC avec les périmètres VaCO dissous ;
-- prudence : la couverture complète à 10 cm est volumineuse. Générer et
-  contrôler le manifeste avant de lancer le téléchargement.
-
-OSM :
-
-- `highway=cycleway` ;
-- `cycleway=*`, `cycleway:left=*`, `cycleway:right=*`, `cycleway:both=*` ;
-- `bicycle=designated`.
-
-Sources locales de contexte :
-
-- `geneve_sitg_amenagements_2roues` : téléchargement direct ArcGIS FeatureServer ;
-- `lausanne_viageo_amenagement_cyclable` : source documentée, téléchargement
-  manuel ou authentifié à finaliser ;
-- Berne, Bâle, Zurich : sources locales encore à compléter.
+La couverture SWISSIMAGE `0.1 m` complète n'est pas incluse. Elle représente un
+ordre de grandeur de 700 à 750 GiB pour les cinq agglomérations et doit rester
+une étape explicite si elle devient nécessaire.
 
 ## Commandes
 
-Télécharger les agglomérations :
+Les commandes `make` sont seulement des raccourcis.
 
-```bash
-python3 scripts/fetch_agglomerations.py --source vaco
-```
+| Commande | Rôle |
+|---|---|
+| `make install` | Crée `.venv/` et installe les dépendances. |
+| `make check` | Vérifie que le code Python compile. |
+| `make check-data` | Vérifie que les données minimales sont présentes. |
+| `make init-data` | Crée ou affiche les dossiers attendus, si besoin. |
 
-Créer un manifeste orthophoto STAC complet, avec estimation des tailles :
+Il n'y a pas de `make manifest`. La préparation des orthophotos est volontairement
+laissée dans des commandes explicites, car elle peut impliquer des volumes
+importants.
 
-```bash
-python3 fetch_orthophotos_stac.py --gsds 2.0 0.1 --estimate-sizes
-```
+## Premières actions recommandées
 
-Télécharger la couverture complète en 2 m :
+1. Vérifier que l'installation fonctionne avec `make check`.
+2. Copier le paquet kDrive dans `data/`.
+3. Vérifier l'état local avec `make check-data`.
+4. Ouvrir les notebooks dans l'ordre `00`, `02`, `01`, `03`.
+5. Vérifier le réseau routier de référence et son alignement avec les
+   orthophotos.
+6. Comparer visuellement quelques secteurs Lausanne/Genève entre orthophotos,
+   réseau, OSM et sources locales.
+7. Choisir deux ou trois classes de départ, par exemple bande cyclable, piste
+   séparée, indéterminé.
+8. Intégrer ensuite Zurich comme source externe prioritaire de comparaison.
 
-```bash
-python3 fetch_orthophotos_stac.py --gsds 2.0 --download --estimate-sizes
-```
+## Planning indicatif
 
-Télécharger la couverture complète en 10 cm, uniquement sur un volume disposant
-de suffisamment d'espace :
+Planning repris du fichier `260224_gantt.xlsx`. Il sert de cadrage de lancement
+et devra être ajusté au fur et à mesure des premiers tests.
 
-```bash
-python3 fetch_orthophotos_stac.py --gsds 0.1 --download --estimate-sizes
-```
+| Phase / jalon | Tâche ou livrable | Début | Échéance | Durée | Responsable | Statut |
+|---|---|---:|---:|---:|---|---|
+| Phase 1 Data acquisition | Télécharger les données pour 5 villes : swissTLM3D, SWISSIMAGE, deux villes test et trois villes train | 01.07.26 | 31.07.26 | 30 | AS | Not Started |
+| Phase 1 Data acquisition | Préparer la couche SIG de groundtruth | 01.07.26 | 31.07.26 | 30 | AS | Not Started |
+| Phase 1 Data acquisition | Préparer les données pour tout le canton | 01.07.26 | 31.07.26 | 30 | AS | Not Started |
+| MS1: Review Meeting | Jalon de revue |  | 31.07.26 |  |  | Milestone |
+| Phase 2 Data prep | Préparation des données | 31.07.26 | 21.08.26 | 21 | Person 1 | Not Started |
+| Phase 2 Data prep | Exploration des données | 21.08.26 | 04.09.26 | 14 | Person 1 | Not Started |
+| Phase 2 Data prep | Revue de littérature et identification des modèles | 04.09.26 | 18.09.26 | 14 | Person 1 | Not Started |
+| Phase 2 Data prep | Data augmentation | 18.09.26 | 02.10.26 | 14 | [À COMPLÉTER] | Not Started |
+| MS2: Review Meeting | Jalon de revue |  | 02.10.26 |  |  | Milestone |
+| Phase 3 Training | Tester plusieurs modèles | 02.10.26 | 01.12.26 | 60 | Person 2 | Not Started |
+| Phase 3 Training | Benchmark et évaluation en parallèle | 17.11.26 | 01.12.26 | 14 | Person 1 | Not Started |
+| Phase 3 Training | Refactoring et nettoyage du code | 01.12.26 | 15.12.26 | 14 | Person 1 | Not Started |
+| Phase 3 Training | Tester la généralisation sur d'autres villes, par exemple Zurich | 15.12.26 | 29.12.26 | 14 | Person 2 | Not Started |
+| MS2: Review Meeting | Jalon de revue |  | 29.12.26 |  |  | Milestone |
+| Phase 4 Extending to the whole Canton | Lancer le modèle | 29.12.26 | 05.01.27 | 7 | Person 1 | Not Started |
+| Phase 4 Extending to the whole Canton | Revoir les résultats | 05.01.27 | 12.01.27 | 7 | Person 1 | Not Started |
+| Phase 4 Extending to the whole Canton | Documentation de reproductibilité | 12.01.27 | 19.01.27 | 7 | Person 2 | Not Started |
+| Phase 4 Extending to the whole Canton | Transmission | 19.01.27 | 26.01.27 | 7 | Person 2 | Not Started |
+| MS3: Final Meeting | Jalon final |  | 26.01.27 |  |  | [À COMPLÉTER] |
 
-Télécharger les sources de contexte directes :
+Durée totale indicative : 179 jours. À vérifier : le Gantt source contient deux
+lignes nommées `MS2`.
 
-```bash
-python3 scripts/fetch_context_sources.py --sources geneve_sitg_amenagements_2roues
-```
+## Documentation
 
-## Prudence méthodologique
-
-OSM et les couches administratives locales servent de labels faibles. Elles ne
-constituent pas une vérité terrain exhaustive. Avant apprentissage supervisé, il
-faut contrôler les catégories, les dates, les décalages géométriques, les effets
-de latéralisation et la visibilité réelle dans les orthophotos.
-
-Un schéma de labels initial est disponible dans `docs/LABEL_SCHEMA.md`.
-
-## Documentation utile
-
-- `docs/DATA_LOADING.md` : chargement, contrôle et régénération des données.
-- `docs/SETUP.md` : installation locale.
-- `docs/LABEL_SCHEMA.md` : classes de labels faibles pour les infrastructures
-  cyclables.
-
-## Git
-
-Remote prévu :
-
-```bash
-https://github.com/action-situee/projet-slowvaud.git
-```
+- `docs/DATA_SOURCES.md` : sources disponibles, géoportails, tags OSM, limites.
+- `docs/METHOD_NOTES.md` : classes provisoires, prudences et prochaines étapes.

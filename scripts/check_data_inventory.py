@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -23,10 +22,6 @@ CRS_WGS84 = "EPSG:4326"
 
 def _status(path: Path) -> str:
     return "ok" if path.exists() else "missing"
-
-
-def _gib(bytes_count: int | float) -> str:
-    return f"{bytes_count / 1024**3:.1f} GiB"
 
 
 def _vector_row(label: str, path: Path, expected_crs: str) -> dict[str, object]:
@@ -65,11 +60,39 @@ def vector_inventory() -> pd.DataFrame:
                 CRS_WGS84,
             )
         )
+        rows.append(
+            _vector_row(
+                f"swisstlm3d_roads/{agglo_key}",
+                paths["raw_swisstlm3d"] / "roads" / f"swisstlm3d_roads_{agglo_key}.geojson",
+                CRS_LV95,
+            )
+        )
     rows.append(
         _vector_row(
             "context/geneve_sitg_amenagements_2roues",
             paths["context"] / "geneve" / "geneve_sitg_amenagements_2roues.geojson",
             CRS_WGS84,
+        )
+    )
+    rows.append(
+        _vector_row(
+            "context/lausanne_viageo_velo_amenagement",
+            paths["context"] / "lausanne" / "lausanne_viageo_velo_amenagement.geojson",
+            CRS_LV95,
+        )
+    )
+    rows.append(
+        _vector_row(
+            "context/zurich_veloinfrastruktur_radwege",
+            paths["context"] / "zurich" / "zurich_veloinfrastruktur_radwege.geojson",
+            CRS_LV95,
+        )
+    )
+    rows.append(
+        _vector_row(
+            "context/zurich_veloinfrastruktur_radstreifen",
+            paths["context"] / "zurich" / "zurich_veloinfrastruktur_radstreifen.geojson",
+            CRS_LV95,
         )
     )
     return pd.DataFrame(rows)
@@ -98,52 +121,27 @@ def orthophoto_inventory() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def manifest_inventory() -> pd.DataFrame:
+def file_inventory() -> pd.DataFrame:
     paths = data_paths()
-    manifest = paths["manifests"] / "orthophoto_stac_manifest.csv"
-    rows: list[dict[str, object]] = [
+    rows = [
         {
-            "dataset": "orthophoto_stac_manifest",
-            "path": str(manifest),
-            "status": _status(manifest),
-            "rows": None,
-            "detail": None,
-        }
+            "dataset": "swisstlm3d_source_zip",
+            "path": str(paths["raw_swisstlm3d"] / "swisstlm3d_2026-02-24_2056_5728.gpkg.zip"),
+            "status": _status(paths["raw_swisstlm3d"] / "swisstlm3d_2026-02-24_2056_5728.gpkg.zip"),
+        },
+        {
+            "dataset": "lausanne_viageo_zip",
+            "path": str(paths["context"] / "lausanne" / "lausanne_viageo_amenagement_cyclable.zip"),
+            "status": _status(paths["context"] / "lausanne" / "lausanne_viageo_amenagement_cyclable.zip"),
+        },
     ]
-    if manifest.exists():
-        df = pd.read_csv(manifest)
-        detail = [
-            f"{gsd}: {count}"
-            for gsd, count in sorted(df.groupby("gsd")["href"].nunique().to_dict().items())
-        ]
-        rows[0]["rows"] = len(df)
-        rows[0]["detail"] = ", ".join(detail)
-
-    estimate = paths["manifests"] / "orthophoto_stac_size_estimate.json"
-    rows.append(
-        {
-            "dataset": "orthophoto_stac_size_estimate",
-            "path": str(estimate),
-            "status": _status(estimate),
-            "rows": None,
-            "detail": None,
-        }
-    )
-    if estimate.exists():
-        payload = json.loads(estimate.read_text(encoding="utf-8"))
-        detail = [
-            f"{row['gsd']}: {_gib(row['estimated_total_bytes'])}"
-            for row in payload.get("summary", [])
-        ]
-        rows[-1]["rows"] = len(payload.get("summary", []))
-        rows[-1]["detail"] = ", ".join(detail)
     return pd.DataFrame(rows)
 
 
 def strict_failures(
     vector_df: pd.DataFrame,
     ortho_df: pd.DataFrame,
-    manifest_df: pd.DataFrame,
+    file_df: pd.DataFrame,
 ) -> list[str]:
     failures: list[str] = []
     for row in vector_df.to_dict("records"):
@@ -151,33 +149,61 @@ def strict_failures(
             failures.append(f"manquant: {row['dataset']}")
         elif row["crs"] != row["expected_crs"]:
             failures.append(f"CRS inattendu: {row['dataset']} = {row['crs']}")
-    manifest_status = dict(zip(manifest_df["dataset"], manifest_df["status"], strict=False))
-    if manifest_status.get("orthophoto_stac_manifest") != "ok":
-        failures.append("manquant: orthophoto_stac_manifest")
+    for row in file_df.to_dict("records"):
+        if row["status"] != "ok":
+            failures.append(f"manquant: {row['dataset']}")
     gsd_2 = ortho_df[ortho_df["dataset"] == "orthophotos/gsd_2_0"].iloc[0]
     if int(gsd_2["files"]) == 0:
         failures.append("manquant: orthophotos/gsd_2_0")
+    gsd_01 = ortho_df[ortho_df["dataset"] == "orthophotos/gsd_0_1"].iloc[0]
+    if int(gsd_01["files"]) == 0:
+        failures.append("manquant: orthophotos/gsd_0_1_sample")
     return failures
+
+
+def print_summary(
+    vector_df: pd.DataFrame,
+    ortho_df: pd.DataFrame,
+    file_df: pd.DataFrame,
+) -> None:
+    vector_ok = int((vector_df["status"] == "ok").sum())
+    vector_total = len(vector_df)
+    file_ok = int((file_df["status"] == "ok").sum())
+    file_total = len(file_df)
+
+    gsd_2 = ortho_df[ortho_df["dataset"] == "orthophotos/gsd_2_0"].iloc[0]
+    gsd_01 = ortho_df[ortho_df["dataset"] == "orthophotos/gsd_0_1"].iloc[0]
+
+    print("\nInventaire SlowVaud")
+    print(f"- Vecteurs: {vector_ok}/{vector_total} jeux présents")
+    print(f"- Fichiers sources: {file_ok}/{file_total} présents")
+    print(f"- Orthophotos 2.0 m: {gsd_2['status']} ({int(gsd_2['files'])} fichiers)")
+    print(f"- Orthophotos 0.1 m: sample local ({int(gsd_01['files'])} fichiers)")
+    print("\nNote: la couverture 0.1 m complète n'est pas attendue dans le paquet transmis.")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
     vector_df = vector_inventory()
     ortho_df = orthophoto_inventory()
-    manifest_df = manifest_inventory()
+    file_df = file_inventory()
 
-    print("\nVecteurs")
-    print(vector_df.to_string(index=False))
-    print("\nOrthophotos")
-    print(ortho_df.to_string(index=False))
-    print("\nManifestes")
-    print(manifest_df.to_string(index=False))
+    if args.verbose:
+        print("\nVecteurs")
+        print(vector_df.to_string(index=False))
+        print("\nFichiers sources")
+        print(file_df.to_string(index=False))
+        print("\nOrthophotos")
+        print(ortho_df.to_string(index=False))
+    else:
+        print_summary(vector_df, ortho_df, file_df)
 
     if args.strict:
-        failures = strict_failures(vector_df, ortho_df, manifest_df)
+        failures = strict_failures(vector_df, ortho_df, file_df)
         if failures:
             print("\nEchecs stricts")
             for failure in failures:

@@ -28,6 +28,7 @@ def data_paths(root: str | Path | None = None) -> dict[str, Path]:
         "raw_agglomerations": data / "raw" / "agglomerations",
         "raw_osm": data / "raw" / "osm",
         "raw_orthophotos": data / "raw" / "orthophotos",
+        "raw_swisstlm3d": data / "raw" / "swisstlm3d",
         "context": data / "context",
         "manifests": data / "manifests",
         "processed": data / "processed",
@@ -39,7 +40,7 @@ def ensure_data_tree(root: str | Path | None = None) -> dict[str, Path]:
     """Creer les dossiers de travail s'ils n'existent pas."""
     paths = data_paths(root)
     for key, path in paths.items():
-        if key != "root":
+        if key not in {"root", "manifests"}:
             path.mkdir(parents=True, exist_ok=True)
     return paths
 
@@ -48,4 +49,3 @@ def agglomeration_items(config: dict[str, Any] | None = None) -> list[tuple[str,
     """Lister les agglomerations dans l'ordre de la configuration."""
     cfg = config or load_config()
     return list(cfg["agglomerations"].items())
-
